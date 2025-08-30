@@ -10,6 +10,8 @@ services:
       - "15002:11002"
     depends_on:
       - backend
+    env_file:
+      - .env
   yb100:
     build: ./yb100
     ports:
