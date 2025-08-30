@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "15001:11001"
+  backoffice:
+    build: ./backoffice
+    ports:
+      - "15002:11002"
+    depends_on:
+      - backend
+  yb100:
+    build: ./yb100
+    ports:
+      - "15000:80"
+    depends_on:
+      - backend
+  ms:
+    build: ./ms
+    ports:
+      - "16000:80"
+    depends_on:
+      - backend
+  fs:
+    build: ./fs
+    ports:
+      - "17000:80"
+    depends_on:
+      - backend
+  xmas:
+    build: ./xmas
+    ports:
+      - "18000:80"
+    depends_on:
+      - backend
