@@ -16,14 +16,14 @@ services:
       - "15000:80"
     depends_on:
       - backend
-  ms:
-    build: ./ms
+  fs:
+    build: ./fs
     ports:
       - "16000:80"
     depends_on:
       - backend
-  fs:
-    build: ./fs
+  sp:
+    build: ./sp
     ports:
       - "17000:80"
     depends_on:
