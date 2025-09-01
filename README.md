@@ -5,11 +5,28 @@ This repository contains the Docker setup for the backend, backoffice, and multi
 ## Running locally
 
 1. Ensure Docker is installed.
-2. Execute `./start.sh` to rebuild and start all services.
+2. Copy `.env.example` to `.env` and adjust values as needed.
+3. Execute `./start.sh` to rebuild and start all services.
+
+### Environment variables
+
+The `.env` file controls service configuration. Key variables include:
+
+- `ADMIN_USERNAME` / `ADMIN_PASSWORD` – credentials for the backoffice.
+- `MONGODB_URI` – MongoDB connection string.
+- `MONGODB_DB` – database name.
+- `MONGODB_COLLECTION` – MongoDB collection for items.
+- `LISTS_COLLECTION` – MongoDB collection for lists.
+
+### Service endpoints
 
 Once running, the following endpoints are available:
 
 - **Backend API:** http://localhost:15001
+  - `/list` – GET latest list or fetch by `id`/`keyword`, POST to create, PUT to update.
+  - `/items` – GET recent items or fetch by `id`, POST to create, PUT to update.
+  - `/images` – GET 100 random image URLs.
+  - `/docs` – Swagger API documentation.
 - **Backoffice:** http://localhost:15002
 - **Frontends:**
   - http://localhost:15000 (yb100)
