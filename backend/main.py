@@ -8,12 +8,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from pymongo import MongoClient
+from pymongo.errors import ServerSelectionTimeoutError
 
 load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 DB_NAME = os.getenv("MONGODB_DB", "AIDB")
-LISTS_COLLECTION = os.getenv("LISTS_COLLECTION", "DAILY")
+LISTS_COLLECTION = os.getenv("LISTS_COLLECTION", "DAILLY")
 ITEMS_COLLECTION = os.getenv("MONGODB_COLLECTION", "ITEMS")
 
 client = MongoClient(MONGODB_URI)
@@ -76,20 +77,23 @@ async def root() -> str:
 @app.get("/list")
 async def get_list(id: Optional[str] = None, keyword: Optional[str] = None):
     """Return the latest list or a specific one by id/keyword."""
-    if id:
-        doc = list_collection.find_one({"_id": ObjectId(id)})
+    try:
+        if id:
+            doc = list_collection.find_one({"_id": ObjectId(id)})
+            if not doc:
+                raise HTTPException(status_code=404, detail="List not found")
+            doc["_id"] = str(doc["_id"])
+            return doc
+        query = {}
+        if keyword:
+            query["name"] = {"$regex": keyword, "$options": "i"}
+        doc = list_collection.find_one(query, sort=[("_id", -1)])
         if not doc:
-            raise HTTPException(status_code=404, detail="List not found")
+            raise HTTPException(status_code=404, detail="No list found")
         doc["_id"] = str(doc["_id"])
         return doc
-    query = {}
-    if keyword:
-        query["name"] = {"$regex": keyword, "$options": "i"}
-    doc = list_collection.find_one(query, sort=[("_id", -1)])
-    if not doc:
-        raise HTTPException(status_code=404, detail="No list found")
-    doc["_id"] = str(doc["_id"])
-    return doc
+    except ServerSelectionTimeoutError:
+        return {"database": DB_NAME, "collection": LISTS_COLLECTION, "items": []}
 
 
 @app.post("/list")
