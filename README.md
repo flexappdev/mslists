@@ -15,8 +15,9 @@ The `.env` file controls service configuration. Key variables include:
 - `ADMIN_USERNAME` / `ADMIN_PASSWORD` – credentials for the backoffice.
 - `MONGODB_URI` – MongoDB connection string.
 - `MONGODB_DB` – database name.
-- `MONGODB_COLLECTION` – MongoDB collection for items.
-- `LISTS_COLLECTION` – MongoDB collection for lists.
+- `MONGODB_COLLECTION` – default MongoDB collection name.
+- `LISTS_COLLECTION` – optional collection for lists.
+- `ITEMS_COLLECTION` – optional collection for items.
 
 ### Service endpoints
 
