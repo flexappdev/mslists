@@ -4,6 +4,8 @@ services:
     build: ./backend
     ports:
       - "15001:11001"
+    env_file:
+      - .env
   backoffice:
     build: ./backoffice
     ports:
