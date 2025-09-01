@@ -40,10 +40,12 @@ async def root() -> str:
     status = "ok"
     try:
         client.admin.command("ping")
+        list_count = list_collection.count_documents({})
+        item_count = item_collection.count_documents({})
     except Exception:  # pragma: no cover - simple health check
         status = "error"
-    list_count = list_collection.count_documents({})
-    item_count = item_collection.count_documents({})
+        list_count = 0
+        item_count = 0
     return f"""
     <!doctype html>
     <html lang='en'>
