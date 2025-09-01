@@ -1,7 +1,8 @@
 #!/bin/bash
-sudo docker-compose down --volumes --remove-orphans
-sudo docker-compose build --no-cache
-sudo docker-compose up -d
+set -e
+docker compose down --volumes --remove-orphans
+docker compose build --no-cache
+docker compose up -d
 
 echo "- **Backend API:** http://localhost:15001"
 echo "- **Backoffice:** http://localhost:15002"
