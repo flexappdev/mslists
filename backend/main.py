@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from pymongo import MongoClient
+from pymongo.errors import CollectionInvalid
 
 load_dotenv()
 
@@ -40,12 +41,19 @@ async def root() -> str:
     status = "ok"
     try:
         client.admin.command("ping")
-        list_count = list_collection.count_documents({})
-        item_count = item_collection.count_documents({})
     except Exception:  # pragma: no cover - simple health check
         status = "error"
         list_count = 0
         item_count = 0
+    else:
+        try:
+            list_count = list_collection.count_documents({})
+        except Exception:
+            list_count = 0
+        try:
+            item_count = item_collection.count_documents({})
+        except Exception:
+            item_count = 0
     return f"""
     <!doctype html>
     <html lang='en'>
@@ -73,6 +81,32 @@ async def root() -> str:
     </body>
     </html>
     """
+
+
+@app.get("/mongo-test")
+async def mongo_test():
+    """Verify MongoDB connection and ensure default collections exist."""
+    try:
+        client.admin.command("ping")
+        collections = db.list_collection_names()
+        if LISTS_COLLECTION not in collections:
+            try:
+                db.create_collection(LISTS_COLLECTION)
+            except CollectionInvalid:
+                pass
+        if ITEMS_COLLECTION not in collections:
+            try:
+                db.create_collection(ITEMS_COLLECTION)
+            except CollectionInvalid:
+                pass
+        collections = db.list_collection_names()
+        return {
+            "status": "ok",
+            "database": DB_NAME,
+            "collections": collections,
+        }
+    except Exception as exc:  # pragma: no cover - health check
+        return {"status": "error", "detail": str(exc)}
 
 
 @app.get("/list")
