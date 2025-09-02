@@ -45,7 +45,7 @@ const Index = () => {
   const regularLists = filteredLists.filter(list => !list.featured);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background text-foreground">
       <Header onSearch={handleSearch} />
       
       {/* Hero Section */}

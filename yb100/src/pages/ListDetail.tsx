@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Share2, Heart, TrendingUp, Calendar, User } from 'lucide-react';
 import Header from '@/components/Layout/Header';
 import Footer from '@/components/Layout/Footer';
@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const ListDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
   const [list, setList] = useState<TopList | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -23,6 +24,17 @@ const ListDetail = () => {
       setLoading(false);
     }, 500);
   }, [slug]);
+
+  useEffect(() => {
+    if (!list) return;
+    const itemId = searchParams.get('item');
+    if (itemId) {
+      const el = document.getElementById(itemId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [list, searchParams]);
 
   const handleVote = (itemId: string) => {
     if (!list) return;
@@ -61,7 +73,7 @@ const ListDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background text-foreground">
         <Header />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="animate-pulse">
@@ -81,7 +93,7 @@ const ListDetail = () => {
 
   if (!list) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background text-foreground">
         <Header />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">List Not Found</h1>
@@ -96,7 +108,7 @@ const ListDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background text-foreground">
       <Header />
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -187,7 +199,7 @@ const ListDetail = () => {
 
 const ListItemCard = ({ item, onVote }: { item: ListItem; onVote: () => void }) => {
   return (
-    <div className="bg-white rounded-xl card-shadow p-6 hover:shadow-md transition-shadow duration-200">
+    <div id={item.id} className="bg-white rounded-xl card-shadow p-6 hover:shadow-md transition-shadow duration-200">
       <div className="flex items-start space-x-4">
         {/* Rank */}
         <div className="flex-shrink-0">
