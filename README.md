@@ -28,7 +28,7 @@ Once running, the following endpoints are available:
   - `/items` – GET recent items or fetch by `id`, POST to create, PUT to update.
   - `/images` – GET 100 random image URLs.
 - **Swagger Docs:** http://localhost:15001/docs
-- **Backoffice:** http://localhost:15002
+- **Backoffice:** http://localhost:15002 (HTTP Basic auth with `ADMIN_USERNAME` / `ADMIN_PASSWORD`)
 - **Frontends:**
   - http://localhost:15000 (yb100)
   - http://localhost:16000 (fs)
