@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 
 const Header = () => {
   return (
@@ -24,6 +25,7 @@ const Header = () => {
         </nav>
         
         <div className="flex items-center space-x-4">
+          <ModeToggle />
           <Button variant="outline" size="sm">
             🛒 Cart
           </Button>
