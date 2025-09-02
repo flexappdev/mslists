@@ -1,4 +1,5 @@
 import os
+import random
 from typing import List, Optional
 
 import requests
@@ -14,9 +15,8 @@ load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 DB_NAME = os.getenv("MONGODB_DB", "AIDB")
-DEFAULT_COLLECTION = os.getenv("MONGODB_COLLECTION", "ITEMS")
-LISTS_COLLECTION = os.getenv("LISTS_COLLECTION", DEFAULT_COLLECTION)
-ITEMS_COLLECTION = os.getenv("ITEMS_COLLECTION", DEFAULT_COLLECTION)
+LISTS_COLLECTION = os.getenv("LISTS_COLLECTION", "DAILY")
+ITEMS_COLLECTION = os.getenv("ITEMS_COLLECTION", "ITEMS")
 
 client = MongoClient(MONGODB_URI)
 db = client[DB_NAME]
@@ -130,7 +130,8 @@ async def root() -> str:
     </ul>
     <h2>Endpoints</h2>
     <ul>
-      <li><a href='/list'>/list</a> - GET latest list, POST add list, PUT update list</li>
+      <li><a href='/lists'>/lists</a> - GET all lists or filter by keyword</li>
+      <li><a href='/list'>/list</a> - GET random list, POST add list, PUT update list</li>
       <li><a href='/items'>/items</a> - GET latest items, POST add item, PUT update item</li>
       <li><a href='/images'>/images</a> - GET 100 random images</li>
       <li><a href='/mongo-test'>/mongo-test</a> - verify MongoDB connection</li>
@@ -178,21 +179,36 @@ async def mongo_test():
         return {"status": "error", "detail": str(exc)}
 
 
+@app.get("/lists")
+async def get_lists(keyword: Optional[str] = None):
+    """Return all lists, optionally filtered by keyword in the _id."""
+    docs = list_collection.find()
+    lists = []
+    for doc in docs:
+        doc["_id"] = str(doc["_id"])
+        if not keyword or keyword.lower() in doc["_id"].lower():
+            lists.append(doc)
+    return lists
+
+
 @app.get("/list")
 async def get_list(id: Optional[str] = None, keyword: Optional[str] = None):
-    """Return the latest list or a specific one by id/keyword."""
+    """Return a random list or a specific one by id/keyword."""
     if id:
-        doc = list_collection.find_one({"_id": ObjectId(id)})
+        try:
+            doc = list_collection.find_one({"_id": ObjectId(id)})
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid id")
         if not doc:
             raise HTTPException(status_code=404, detail="List not found")
         doc["_id"] = str(doc["_id"])
         return doc
-    query = {}
+    docs = list(list_collection.find())
     if keyword:
-        query["name"] = {"$regex": keyword, "$options": "i"}
-    doc = list_collection.find_one(query, sort=[("_id", -1)])
-    if not doc:
+        docs = [d for d in docs if keyword.lower() in str(d["_id"]).lower()]
+    if not docs:
         raise HTTPException(status_code=404, detail="No list found")
+    doc = random.choice(docs)
     doc["_id"] = str(doc["_id"])
     return doc
 
