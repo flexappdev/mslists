@@ -38,15 +38,11 @@ class ItemModel(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def root() -> str:
-    """Return a small HTML status page."""
-    status = "ok"
+    """Return the HTML index page with service status."""
+    # MongoDB status and counts
     try:
         client.admin.command("ping")
-    except Exception:  # pragma: no cover - simple health check
-        status = "error"
-        list_count = 0
-        item_count = 0
-    else:
+        mongo_status = "ok"
         try:
             list_count = list_collection.count_documents({})
         except Exception:
@@ -55,45 +51,102 @@ async def root() -> str:
             item_count = item_collection.count_documents({})
         except Exception:
             item_count = 0
-    return f"""
-<!doctype html>
+    except Exception:  # pragma: no cover - simple health check
+        mongo_status = "error"
+        list_count = 0
+        item_count = 0
+
+    # Check frontend site availability
+    sites = {
+        "yb100": "http://localhost:15000",
+        "fs": "http://localhost:16000",
+        "sp": "http://localhost:17000",
+        "xmas": "http://localhost:18000",
+    }
+    site_status = {}
+    for name, url in sites.items():
+        try:
+            requests.get(url, timeout=2).raise_for_status()
+            site_status[name] = "ok"
+        except Exception:
+            site_status[name] = "error"
+    site_status_html = "".join(
+        f"<li>{name}: {status}</li>" for name, status in site_status.items()
+    )
+
+    # LLM status
+    llm_url = os.getenv("LLM_API_URL")
+    if llm_url:
+        try:
+            requests.get(llm_url, timeout=5).raise_for_status()
+            llm_status = "ok"
+        except Exception:
+            llm_status = "error"
+    else:
+        llm_status = "not configured"
+
+    return f"""<!doctype html>
 <html lang='en'>
 <head>
   <meta charset='utf-8'>
-  <title>Backend API</title>
+  <title>Backend Index</title>
   <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
+  <style>
+    body {{
+      padding-top: 4.5rem;
+      padding-bottom: 4.5rem;
+    }}
+  </style>
 </head>
-<body class='container py-5'>
-  <h1>Backend API</h1>
-  <h2>Status</h2>
-  <ul>
-    <li>Status: {status}</li>
-    <li>Database: {DB_NAME}</li>
-    <li>{LISTS_COLLECTION} ({list_count} docs)</li>
-    <li>{ITEMS_COLLECTION} ({item_count} docs)</li>
-  </ul>
-  <h2>Endpoints</h2>
-  <ul>
-    <li><a href='/list'>/list</a> - GET latest list, POST add list, PUT update list</li>
-    <li><a href='/items'>/items</a> - GET latest items, POST add item, PUT update item</li>
-    <li><a href='/images'>/images</a> - GET 100 random images</li>
-    <li><a href='/docs'>Swagger documentation</a></li>
-  </ul>
-  <h2>Links</h2>
-  <ul>
-    <li><a href='http://localhost:15000'>Frontend</a></li>
-    <li><a href='http://localhost:15001'>Backend</a></li>
-    <li><a href='/docs'>Docs</a></li>
-    <li>Frontend Sites
-      <ul>
-        <li><a href='http://localhost:15000'>yb100</a></li>
-        <li><a href='http://localhost:16000'>fs</a></li>
-        <li><a href='http://localhost:17000'>sp</a></li>
-        <li><a href='http://localhost:18000'>xmas</a></li>
-      </ul>
-    </li>
-    <li><a href='../README.md'>Readme</a></li>
-  </ul>
+<body class='d-flex flex-column min-vh-100'>
+  <header class='navbar navbar-dark bg-dark fixed-top'>
+    <div class='container-fluid'>
+      <span class='navbar-brand mb-0 h1'>Backend Index</span>
+    </div>
+  </header>
+  <main class='flex-shrink-0 container py-4'>
+    <h1>Backend Index</h1>
+    <p class='lead'>Overview of API, sites and services.</p>
+    <h2>Status</h2>
+    <ul>
+      <li>API: ok</li>
+      <li>Mongo: {mongo_status} (DB: {DB_NAME}, {LISTS_COLLECTION} {list_count}, {ITEMS_COLLECTION} {item_count})</li>
+      <li>LLM: {llm_status}</li>
+      <li>Sites:<ul>{site_status_html}</ul></li>
+    </ul>
+    <h2>Links</h2>
+    <ul>
+      <li><a href='http://localhost:15000'>Frontend</a></li>
+      <li><a href='http://localhost:15001'>Backend</a></li>
+      <li><a href='/docs'>Docs</a></li>
+      <li>Frontend Sites
+        <ul>
+          <li><a href='http://localhost:15000'>yb100</a></li>
+          <li><a href='http://localhost:16000'>fs</a></li>
+          <li><a href='http://localhost:17000'>sp</a></li>
+          <li><a href='http://localhost:18000'>xmas</a></li>
+        </ul>
+      </li>
+    </ul>
+    <h2>Endpoints</h2>
+    <ul>
+      <li><a href='/list'>/list</a> - GET latest list, POST add list, PUT update list</li>
+      <li><a href='/items'>/items</a> - GET latest items, POST add item, PUT update item</li>
+      <li><a href='/images'>/images</a> - GET 100 random images</li>
+      <li><a href='/mongo-test'>/mongo-test</a> - verify MongoDB connection</li>
+      <li><a href='/docs'>Swagger documentation</a></li>
+    </ul>
+    <h2>Readme</h2>
+    <p><a href='../README.md'>README</a></p>
+    <h2>Backlog</h2>
+    <p><a href='../BACKLOG.md'>BACKLOG</a></p>
+  </main>
+  <footer class='footer mt-auto py-3 bg-light fixed-bottom'>
+    <div class='container'>
+      <span class='text-muted'>Backend API</span>
+    </div>
+  </footer>
+  <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
 </body>
 </html>
 """
