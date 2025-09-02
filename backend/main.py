@@ -1,12 +1,16 @@
 import os
 import random
+import secrets
+from pathlib import Path
 from typing import List, Optional
 
+import markdown
 import requests
 from bson import ObjectId
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from pymongo import MongoClient
 from pymongo.errors import CollectionInvalid
@@ -17,6 +21,10 @@ MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 DB_NAME = os.getenv("MONGODB_DB", "AIDB")
 LISTS_COLLECTION = os.getenv("LISTS_COLLECTION", "DAILY")
 ITEMS_COLLECTION = os.getenv("ITEMS_COLLECTION", "ITEMS")
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+BASE_DIR = Path(__file__).resolve().parents[1]
+security = HTTPBasic()
 
 client = MongoClient(MONGODB_URI)
 db = client[DB_NAME]
@@ -24,6 +32,19 @@ list_collection = db[LISTS_COLLECTION]
 item_collection = db[ITEMS_COLLECTION]
 
 app = FastAPI(title="Backend API")
+
+
+def verify(credentials: HTTPBasicCredentials = Depends(security)) -> str:
+    """Validate basic auth credentials."""
+    correct_username = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
+    correct_password = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 
 class ListModel(BaseModel):
@@ -37,24 +58,23 @@ class ItemModel(BaseModel):
 
 
 @app.get("/", response_class=HTMLResponse)
-async def root() -> str:
+async def root(user: str = Depends(verify)) -> str:
     """Return the HTML index page with service status."""
     # MongoDB status and counts
     try:
         client.admin.command("ping")
         mongo_status = "ok"
-        try:
-            list_count = list_collection.count_documents({})
-        except Exception:
-            list_count = 0
-        try:
-            item_count = item_collection.count_documents({})
-        except Exception:
-            item_count = 0
+        collection_status = []
+        for name in db.list_collection_names():
+            try:
+                count = db[name].count_documents({})
+                collection_status.append(f"{name}: {count}")
+            except Exception:
+                collection_status.append(f"{name}: error")
     except Exception:  # pragma: no cover - simple health check
         mongo_status = "error"
-        list_count = 0
-        item_count = 0
+        collection_status = []
+    collection_status_html = "".join(f"<li>{c}</li>" for c in collection_status)
 
     # Check frontend site availability
     sites = {
@@ -75,79 +95,132 @@ async def root() -> str:
     )
 
     # LLM status
-    llm_url = os.getenv("LLM_API_URL")
-    if llm_url:
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if gemini_key:
         try:
-            requests.get(llm_url, timeout=5).raise_for_status()
-            llm_status = "ok"
-        except Exception:
-            llm_status = "error"
+            r = requests.post(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+                params={"key": gemini_key},
+                json={"contents": [{"parts": [{"text": "AI today"}]}]},
+                timeout=10,
+            )
+            r.raise_for_status()
+            data = r.json()
+            text = (
+                data.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+            )
+            llm_status = f"ok: {text}"
+        except Exception as exc:
+            llm_status = f"error: {exc}"
     else:
         llm_status = "not configured"
+
+    # README content
+    try:
+        readme_html = markdown.markdown((BASE_DIR / "README.md").read_text())
+    except Exception:
+        readme_html = "<p>README not found</p>"
+
+    # Backlog checklist
+    try:
+        backlog_lines = (BASE_DIR / "BACKLOG.md").read_text().splitlines()
+        items = [line[2:] for line in backlog_lines if line.startswith("- ")]
+        backlog_html = "<ul>" + "".join(
+            f"<li><input type='checkbox' disabled> {item}</li>" for item in items
+        ) + "</ul>"
+    except Exception:
+        backlog_html = "<p>BACKLOG not found</p>"
 
     return f"""<!doctype html>
 <html lang='en'>
 <head>
   <meta charset='utf-8'>
-  <title>Backend Index</title>
+  <title>MSLISTS</title>
   <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
   <style>
     body {{
       padding-top: 4.5rem;
       padding-bottom: 4.5rem;
     }}
+    #random-item {{
+      width: 200px;
+    }}
   </style>
 </head>
 <body class='d-flex flex-column min-vh-100'>
   <header class='navbar navbar-dark bg-dark fixed-top'>
     <div class='container-fluid'>
-      <span class='navbar-brand mb-0 h1'>Backend Index</span>
+      <span class='navbar-brand mb-0 h1'>MSLISTS</span>
     </div>
   </header>
+  <div id='random-item' class='position-fixed top-50 end-0 translate-middle-y bg-light border p-3'>Right Item</div>
   <main class='flex-shrink-0 container py-4'>
-    <h1>Backend Index</h1>
+    <h1>MSLISTS</h1>
     <p class='lead'>Overview of API, sites and services.</p>
     <h2>Status</h2>
     <ul>
       <li>API: ok</li>
-      <li>Mongo: {mongo_status} (DB: {DB_NAME}, {LISTS_COLLECTION} {list_count}, {ITEMS_COLLECTION} {item_count})</li>
+      <li>Mongo: {mongo_status} (DB: {DB_NAME})<ul>{collection_status_html}</ul></li>
       <li>LLM: {llm_status}</li>
       <li>Sites:<ul>{site_status_html}</ul></li>
     </ul>
     <h2>Links</h2>
     <ul>
-      <li><a href='http://localhost:15000'>Frontend</a></li>
-      <li><a href='http://localhost:15001'>Backend</a></li>
-      <li><a href='/docs'>Docs</a></li>
-      <li>Frontend Sites
-        <ul>
-          <li><a href='http://localhost:15000'>yb100</a></li>
-          <li><a href='http://localhost:16000'>fs</a></li>
-          <li><a href='http://localhost:17000'>sp</a></li>
-          <li><a href='http://localhost:18000'>xmas</a></li>
-        </ul>
-      </li>
-    </ul>
-    <h2>Endpoints</h2>
-    <ul>
-      <li><a href='/lists'>/lists</a> - GET all lists or filter by keyword</li>
-      <li><a href='/list'>/list</a> - GET random list, POST add list, PUT update list</li>
-      <li><a href='/items'>/items</a> - GET latest items, POST add item, PUT update item</li>
-      <li><a href='/images'>/images</a> - GET 100 random images</li>
-      <li><a href='/mongo-test'>/mongo-test</a> - verify MongoDB connection</li>
-      <li><a href='/docs'>Swagger documentation</a></li>
+      <li><a href='http://localhost:15000'>yb100</a></li>
+      <li><a href='http://localhost:16000'>fs</a></li>
+      <li><a href='http://localhost:17000'>sp</a></li>
+      <li><a href='http://localhost:18000'>xmas</a></li>
     </ul>
     <h2>Readme</h2>
-    <p><a href='../README.md'>README</a></p>
+    {readme_html}
     <h2>Backlog</h2>
-    <p><a href='../BACKLOG.md'>BACKLOG</a></p>
+    {backlog_html}
   </main>
-  <footer class='footer mt-auto py-3 bg-light fixed-bottom'>
-    <div class='container'>
-      <span class='text-muted'>Backend API</span>
+  <footer class='footer mt-auto py-3 bg-light fixed-bottom' style='z-index:1030;'>
+    <div class='container d-flex justify-content-between'>
+      <div>
+        <button class='btn btn-link p-0 me-3' onclick="location.href='/about'">About</button>
+        <button class='btn btn-link p-0' onclick='loadRandomItem()'>Random</button>
+      </div>
+      <span class='text-muted'>&copy; 2025 Mat Siems LTD</span>
     </div>
   </footer>
   <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
+  <script>
+    function loadRandomItem() {{
+      fetch('/items')
+        .then(r => r.json())
+        .then(items => {{
+          if(items.length > 0) {{
+            const item = items[Math.floor(Math.random()*items.length)];
+            document.getElementById('random-item').innerText = item.name || JSON.stringify(item);
+          }} else {{
+            document.getElementById('random-item').innerText = 'No items';
+          }}
+        }});
+    }}
+  </script>
+</body>
+</html>
+"""
+
+
+@app.get("/about", response_class=HTMLResponse)
+async def about() -> str:
+    """Simple about page."""
+    return """<!doctype html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8'>
+  <title>About</title>
+  <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
+</head>
+<body class='p-4'>
+  <h1>About MSLISTS</h1>
+  <p>MSLISTS backend API.</p>
 </body>
 </html>
 """
