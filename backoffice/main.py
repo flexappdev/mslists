@@ -54,7 +54,9 @@ def authenticate(
 
 
 @app.get("/", response_class=HTMLResponse)
-async def login_page(request: Request):
+async def login_page(
+    request: Request, credentials: HTTPBasicCredentials | None = Depends(security)
+):
     cookie = request.cookies.get("auth")
     if cookie:
         try:
@@ -66,7 +68,15 @@ async def login_page(request: Request):
                 return RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
         except Exception:
             pass
-    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+    error = None
+    if credentials:
+        correct_username = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
+        correct_password = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
+        if correct_username and correct_password:
+            response = RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+            return response
+        error = "Invalid username or password"
+    return templates.TemplateResponse("login.html", {"request": request, "error": error})
 
 
 @app.post("/login", response_class=HTMLResponse)

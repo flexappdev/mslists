@@ -1,6 +1,7 @@
 import os
-from typing import List, Optional
+from typing import Dict, List, Optional
 
+import httpx
 import requests
 from bson import ObjectId
 from dotenv import load_dotenv
@@ -23,6 +24,13 @@ db = client[DB_NAME]
 list_collection = db[LISTS_COLLECTION]
 item_collection = db[ITEMS_COLLECTION]
 
+SITES: Dict[str, str] = {
+    "yb100": "http://localhost:15000",
+    "fs": "http://localhost:16000",
+    "sp": "http://localhost:17000",
+    "xmas": "http://localhost:18000",
+}
+
 app = FastAPI(title="Backend API")
 
 
@@ -38,12 +46,12 @@ class ItemModel(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def root() -> str:
-    """Return a small HTML status page."""
-    status = "ok"
+    """Return a comprehensive HTML index page."""
+    api_status = "ok"
     try:
         client.admin.command("ping")
     except Exception:  # pragma: no cover - simple health check
-        status = "error"
+        api_status = "error"
         list_count = 0
         item_count = 0
     else:
@@ -55,6 +63,43 @@ async def root() -> str:
             item_count = item_collection.count_documents({})
         except Exception:
             item_count = 0
+
+    async with httpx.AsyncClient() as client_http:
+        site_statuses = {}
+        for name, url in SITES.items():
+            try:
+                r = await client_http.get(url, timeout=2)
+                site_statuses[name] = r.status_code
+            except Exception:
+                site_statuses[name] = "error"
+        llm_url = os.getenv("LLM_URL")
+        if llm_url:
+            try:
+                r = await client_http.post(llm_url, json={"prompt": "ping"}, timeout=5)
+                llm_status = r.status_code
+            except Exception:
+                llm_status = "error"
+        else:
+            llm_status = "not configured"
+
+    readme_html = ""
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "..", "README.md"), encoding="utf-8") as f:
+            readme_html = f.read()
+    except Exception:
+        pass
+
+    backlog_html = ""
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "..", "backlog.md"), encoding="utf-8") as f:
+            backlog_html = f.read()
+    except Exception:
+        backlog_html = "No backlog available."
+
+    site_list = "".join(
+        f"<li>{name}: {status}</li>" for name, status in site_statuses.items()
+    )
+
     return f"""
     <!doctype html>
     <html lang='en'>
@@ -63,22 +108,44 @@ async def root() -> str:
       <title>Backend API</title>
       <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
     </head>
-    <body class='container py-5'>
-      <h1>Backend API</h1>
-      <p>Status: {status}</p>
-      <p>Database: {DB_NAME}</p>
-      <p>Collections:</p>
-      <ul>
-        <li>{LISTS_COLLECTION} ({list_count} docs)</li>
-        <li>{ITEMS_COLLECTION} ({item_count} docs)</li>
-      </ul>
-      <h2>Endpoints</h2>
-      <ul>
-        <li><a href='/list'>/list</a> - GET latest list, POST add list, PUT update list</li>
-        <li><a href='/items'>/items</a> - GET latest items, POST add item, PUT update item</li>
-        <li><a href='/images'>/images</a> - GET 100 random images</li>
-        <li><a href='/docs'>Swagger documentation</a></li>
-      </ul>
+    <body class='d-flex flex-column min-vh-100'>
+      <header class='navbar navbar-dark bg-dark sticky-top'>
+        <div class='container'><span class='navbar-brand mb-0 h1'>Backend API</span></div>
+      </header>
+      <main class='flex-shrink-0 container my-4'>
+        <h1 class='mt-4'>Backend API</h1>
+        <p class='lead'>Overview</p>
+        <h2>Status</h2>
+        <ul>
+          <li>API: {api_status}</li>
+          <li>MongoDB: {DB_NAME} ({LISTS_COLLECTION}={list_count}, {ITEMS_COLLECTION}={item_count})</li>
+          <li>Sites:<ul>{site_list}</ul></li>
+          <li>LLM: {llm_status}</li>
+        </ul>
+        <h2>Links</h2>
+        <ul>
+          <li><a href='/docs'>Swagger documentation</a></li>
+          <li><a href='http://localhost:15002'>Backoffice</a></li>
+          <li><a href='http://localhost:15000'>yb100</a></li>
+          <li><a href='http://localhost:16000'>fs</a></li>
+          <li><a href='http://localhost:17000'>sp</a></li>
+          <li><a href='http://localhost:18000'>xmas</a></li>
+        </ul>
+        <h2>Endpoints</h2>
+        <ul>
+          <li><a href='/list'>/list</a></li>
+          <li><a href='/items'>/items</a></li>
+          <li><a href='/images'>/images</a></li>
+          <li><a href='/mongo-test'>/mongo-test</a></li>
+        </ul>
+        <h2>Readme</h2>
+        <pre>{readme_html}</pre>
+        <h2>Backlog</h2>
+        <pre>{backlog_html}</pre>
+      </main>
+      <footer class='mt-auto py-3 bg-light fixed-bottom'>
+        <div class='container text-center'><span class='text-muted'>mslists</span></div>
+      </footer>
     </body>
     </html>
     """
