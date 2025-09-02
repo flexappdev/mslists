@@ -10,6 +10,9 @@ import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import CreateList from "./pages/CreateList";
 import NotFound from "./pages/NotFound";
+import About from "./pages/About";
+import Scroller from "./pages/Scroller";
+import StickyFooter from "@/components/Layout/StickyFooter";
 
 const queryClient = new QueryClient();
 
@@ -25,8 +28,11 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/create" element={<CreateList />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/scroller" element={<Scroller />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <StickyFooter />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
