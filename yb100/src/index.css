@@ -11,6 +11,10 @@
     --aqua-highlight: #00B4D8;
     --neutral-section: #F5F5F5;
     --neutral-muted: #6C757D;
+
+    /* Accent Colors */
+    --green: 115 35% 71%; /* #9ECE9A */
+    --pink: 1 65% 73%; /* #E78F8E */
     
     /* Shadcn Variables */
     --background: 0 0% 100%;
@@ -25,8 +29,8 @@
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 195 100% 42%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 200 100% 30%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;

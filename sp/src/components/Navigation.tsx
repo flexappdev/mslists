@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Film, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { ModeToggle } from "@/components/mode-toggle";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -29,6 +30,7 @@ const Navigation = () => {
             <a href="#" className="text-zinc-300 hover:text-orange-500 transition-colors font-medium">
               About
             </a>
+            <ModeToggle />
             <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
               Contact
             </Button>

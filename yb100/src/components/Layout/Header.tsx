@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, User, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ModeToggle } from '@/components/mode-toggle';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -53,6 +54,7 @@ const Header = ({ onSearch }: HeaderProps) => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-4">
+            <ModeToggle />
             <Button variant="ghost" asChild>
               <Link to="/create" className="flex items-center space-x-2">
                 <Plus className="w-4 h-4" />
@@ -94,6 +96,7 @@ const Header = ({ onSearch }: HeaderProps) => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-200">
             <nav className="flex flex-col space-y-2">
+              <ModeToggle />
               <Link
                 to="/create"
                 className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
