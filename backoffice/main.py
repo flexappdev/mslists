@@ -13,8 +13,9 @@ from pymongo import MongoClient
 
 load_dotenv()
 
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
+# fall back to defaults if the environment variables are unset or blank
+ADMIN_USERNAME = (os.getenv("ADMIN_USERNAME") or "admin").strip()
+ADMIN_PASSWORD = (os.getenv("ADMIN_PASSWORD") or "changeme").strip()
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 MONGODB_DB = os.getenv("MONGODB_DB", "AIDB")
 MONGODB_COLLECTION = os.getenv("MONGODB_COLLECTION", "ITEMS")
