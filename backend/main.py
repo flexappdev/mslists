@@ -21,8 +21,6 @@ MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 DB_NAME = os.getenv("MONGODB_DB", "AIDB")
 LISTS_COLLECTION = os.getenv("LISTS_COLLECTION", "DAILY")
 ITEMS_COLLECTION = os.getenv("ITEMS_COLLECTION", "ITEMS")
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 BASE_DIR = Path(__file__).resolve().parents[1]
 security = HTTPBasic()
 
@@ -36,8 +34,12 @@ app = FastAPI(title="Backend API")
 
 def verify(credentials: HTTPBasicCredentials = Depends(security)) -> str:
     """Validate basic auth credentials."""
-    correct_username = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
-    correct_password = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
+    username = os.getenv("ADMIN_USERNAME")
+    password = os.getenv("ADMIN_PASSWORD")
+    if not username or not password:
+        raise HTTPException(status_code=500, detail="ADMIN credentials not set")
+    correct_username = secrets.compare_digest(credentials.username, username)
+    correct_password = secrets.compare_digest(credentials.password, password)
     if not (correct_username and correct_password):
         raise HTTPException(
             status_code=401,
