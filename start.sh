@@ -5,6 +5,7 @@ docker compose build --no-cache
 docker compose up -d
 
 echo "- **Backend API:** http://localhost:15001"
+echo "- **Swagger Docs:** http://localhost:15001/docs"
 echo "- **Backoffice:** http://localhost:15002"
 echo "- **Frontends:**"
 echo "  - http://localhost:15000 (yb100)"

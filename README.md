@@ -27,7 +27,7 @@ Once running, the following endpoints are available:
   - `/list` – GET latest list or fetch by `id`/`keyword`, POST to create, PUT to update.
   - `/items` – GET recent items or fetch by `id`, POST to create, PUT to update.
   - `/images` – GET 100 random image URLs.
-  - `/docs` – Swagger API documentation.
+- **Swagger Docs:** http://localhost:15001/docs
 - **Backoffice:** http://localhost:15002
 - **Frontends:**
   - http://localhost:15000 (yb100)

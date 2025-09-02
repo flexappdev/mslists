@@ -56,32 +56,47 @@ async def root() -> str:
         except Exception:
             item_count = 0
     return f"""
-    <!doctype html>
-    <html lang='en'>
-    <head>
-      <meta charset='utf-8'>
-      <title>Backend API</title>
-      <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
-    </head>
-    <body class='container py-5'>
-      <h1>Backend API</h1>
-      <p>Status: {status}</p>
-      <p>Database: {DB_NAME}</p>
-      <p>Collections:</p>
+<!doctype html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8'>
+  <title>Backend API</title>
+  <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
+</head>
+<body class='container py-5'>
+  <h1>Backend API</h1>
+  <h2>Status</h2>
+  <ul>
+    <li>Status: {status}</li>
+    <li>Database: {DB_NAME}</li>
+    <li>{LISTS_COLLECTION} ({list_count} docs)</li>
+    <li>{ITEMS_COLLECTION} ({item_count} docs)</li>
+  </ul>
+  <h2>Endpoints</h2>
+  <ul>
+    <li><a href='/list'>/list</a> - GET latest list, POST add list, PUT update list</li>
+    <li><a href='/items'>/items</a> - GET latest items, POST add item, PUT update item</li>
+    <li><a href='/images'>/images</a> - GET 100 random images</li>
+    <li><a href='/docs'>Swagger documentation</a></li>
+  </ul>
+  <h2>Links</h2>
+  <ul>
+    <li><a href='http://localhost:15000'>Frontend</a></li>
+    <li><a href='http://localhost:15001'>Backend</a></li>
+    <li><a href='/docs'>Docs</a></li>
+    <li>Frontend Sites
       <ul>
-        <li>{LISTS_COLLECTION} ({list_count} docs)</li>
-        <li>{ITEMS_COLLECTION} ({item_count} docs)</li>
+        <li><a href='http://localhost:15000'>yb100</a></li>
+        <li><a href='http://localhost:16000'>fs</a></li>
+        <li><a href='http://localhost:17000'>sp</a></li>
+        <li><a href='http://localhost:18000'>xmas</a></li>
       </ul>
-      <h2>Endpoints</h2>
-      <ul>
-        <li><a href='/list'>/list</a> - GET latest list, POST add list, PUT update list</li>
-        <li><a href='/items'>/items</a> - GET latest items, POST add item, PUT update item</li>
-        <li><a href='/images'>/images</a> - GET 100 random images</li>
-        <li><a href='/docs'>Swagger documentation</a></li>
-      </ul>
-    </body>
-    </html>
-    """
+    </li>
+    <li><a href='../README.md'>Readme</a></li>
+  </ul>
+</body>
+</html>
+"""
 
 
 @app.get("/mongo-test")
