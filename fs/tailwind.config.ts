@@ -1,5 +1,6 @@
 
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
 	darkMode: ["class"],
@@ -28,34 +29,28 @@ export default {
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
-				primary: {
-					DEFAULT: '#4A148C',
-					50: '#F3E8FF',
-					100: '#E9D5FF',
-					200: '#D6BBFB',
-					300: '#C084FC',
-					400: '#A855F7',
-					500: '#9333EA',
-					600: '#7C3AED',
-					700: '#6D28D9',
-					800: '#5B21B6',
-					900: '#4A148C',
-					foreground: '#FFFFFF'
-				},
-				accent: {
-					DEFAULT: '#FDD835',
-					50: '#FFFBEB',
-					100: '#FEF3C7',
-					200: '#FDE68A',
-					300: '#FCD34D',
-					400: '#FBBF24',
-					500: '#F59E0B',
-					600: '#D97706',
-					700: '#B45309',
-					800: '#92400E',
-					900: '#78350F',
-					foreground: '#1F2937'
-				},
+                                primary: {
+                                        DEFAULT: '#006699',
+                                        50: '#e5f7ff',
+                                        100: '#cceeff',
+                                        200: '#80d5ff',
+                                        300: '#33bbff',
+                                        400: '#00aaff',
+                                        500: '#0088cc',
+                                        600: '#006699',
+                                        700: '#004466',
+                                        800: '#00334d',
+                                        900: '#002233',
+                                        foreground: '#FFFFFF'
+                                },
+                                accent: {
+                                        DEFAULT: '#9ECE9A',
+                                        foreground: '#1F2937'
+                                },
+                                pink: {
+                                        DEFAULT: '#E78F8E',
+                                        foreground: '#1F2937'
+                                },
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
 					foreground: 'hsl(var(--secondary-foreground))'
@@ -121,5 +116,5 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+        plugins: [tailwindcssAnimate],
 } satisfies Config;
