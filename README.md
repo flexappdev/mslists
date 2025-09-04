@@ -1,5 +1,13 @@
 # mslists
 
+## 📑 Sections
+
+- [Product](AGENTS.md#product)
+- [UX](AGENTS.md#ux)
+- [Tech](AGENTS.md#tech)
+- [Flow](AGENTS.md#flow)
+- [Marketing](AGENTS.md#marketing)
+
 This repository contains the Docker setup for the backend, backoffice, and multiple React frontends.
 
 ## Running locally
